@@ -9,6 +9,7 @@ var Nebulas = require("nebulas"),
     neb = new Neb();
 
 var rpcURL = "https://mainnet.nebulas.io";
+var chainId = 0;
 var dappAddress = 'n1sr4JA4e9QPB4opLk2Kjmp8NkP6GGoAmnt';
 
 neb.setRequest(new Nebulas.HttpRequest(rpcURL));
@@ -29,6 +30,10 @@ var bounty = {};
 var playersData = {};  //{account:{balance:0, buy: 0, sell: 0, burn: 0, avg: 0}}
 var playersData1 = {};  //{account:{balance:0, buy: 0, sell: 0, burn: 0, avg: 0}}
 var allBounty = 1500;   // 头号玩家独享500 NAS, 所有玩家按CGT数量分享 1500NAS;
+
+var sent = [];
+
+var nonce = 0;
 
 
 var lowerLimit = 0;
@@ -234,21 +239,31 @@ function transferAll(){
     });
 
     var f = function(index){
-        if(index == user.length){ return }
-        while(user[index].value == 0){
-            index ++;
-        }
         if(index < user.length){
-            transfer(passphrase, user[index], index, f);
+            try{
+                transfer(passphrase, user[index], index, f);
+            } catch (e){
+                console.log(e);
+                index ++;
+                if(index < user.length) {
+                    transfer(passphrase, user[index], index, f);
+                }
+            }
+            //transfer(passphrase, user[index], index, f);
         }
     };
+
     if(confirmBatchTransfer){
         var start = 0;
-        while(user[start].value == 0){
+        while(user[start].value <  0.0001){
             start ++;
+            console.log('跳过: ' + user[start].address);
         }
         if(start < user.length) {
-            transfer(passphrase, user[start], start, f);
+            neb.api.getNebState().then((nebstate) => {
+                chainId = nebstate.chain_id;
+                transfer(passphrase, user[start], start, f);
+            });
         }
     }
 }
@@ -295,99 +310,106 @@ function transferRemain(){
 
 
 function transfer(passphrase, user, index, callback){
+    if(!sent.includes(index)){
+        sent.push(index);
+    } else {
+        return callback(index + 1);
+    }
     var toAddress = user.address;
     var value = parseInt(user.value * 10000) / 10000;
     if(value < 0.0001){
-        callback(index + 1);
-        return;
+        return callback(index + 1);
     }
     var accounts = require(path + "accounts.json");
     var key = JSON.stringify(require(path + accounts[0] + ".json"));
     var acc = new Account();
-
-    try {
-        acc = acc.fromKey(key, passphrase, true);
-        neb.api.getNebState().then((nebstate) => {
-            fromAddress = acc.getAddressString();
-            neb.api.getAccountState(fromAddress).then((accstate) => {
-                if(Unit.fromBasic(accstate.balance, "nas").toNumber() > 0.1){
-                    let _value = Unit.nasToBasic(value);
-                    _value = parseInt(_value);
-                    let _nonce = parseInt(accstate.nonce) + 1;
-                    let _to = toAddress;
-                    //generate transfer information
-                    var Transaction = Nebulas.Transaction;
-                    var tx = new Transaction({
-                        chainID: nebstate.chain_id,
-                        from: acc,
-                        to: _to,
-                        value: _value,
-                        nonce: _nonce,
-                        gasPrice: 1000000,
-                        gasLimit: 2000000
+    acc = acc.fromKey(key, passphrase, true);
+    fromAddress = acc.getAddressString();
+    neb.api.getAccountState(fromAddress).then((accstate) => {
+        if(Unit.fromBasic(accstate.balance, "nas").toNumber() > 0.1){
+            try {
+                console.log(fromAddress + " 准备发送 " + value + " NAS 给 " + toAddress);
+                let _value = Unit.nasToBasic(value);
+                _value = parseInt(_value);
+                let _nonce = parseInt(accstate.nonce) + 1;
+                let _to = toAddress;
+                //generate transfer information
+                var Transaction = Nebulas.Transaction;
+                var tx = new Transaction({
+                    chainID: 1,
+                    from: acc,
+                    to: _to,
+                    value: _value,
+                    nonce: _nonce,
+                    gasPrice: 10000000,
+                    gasLimit: 30000
+                });
+                tx.signTransaction();
+                //send a transfer request to the NAS node
+                neb.api.sendRawTransaction({
+                    data: tx.toProtoString()
+                }).then((result) => {
+                    //console.log("Transfer " + toAddress + " " + value);
+                    console.log(fromAddress + " 正在发送 " + value + " NAS 给 " + toAddress);
+                    const fs = require('fs');
+                    var balance = require("./bounty.json");
+                    balance[toAddress] = 0;
+                    fs.writeFileSync("./bounty.json", JSON.stringify(balance), function(err) {
+                        if(err) {
+                            return console.log(err);
+                        }
                     });
-                    tx.signTransaction();
-                    //send a transfer request to the NAS node
-                    neb.api.sendRawTransaction({
-                        data: tx.toProtoString()
-                    }).then((result) => {
-                        //console.log("Transfer " + toAddress + " " + value);
-                        console.log(fromAddress + " 发送 " + value + " NAS 给 " + toAddress);
-                        const fs = require('fs');
-                        var balance = require("./bounty.json");
-                        balance[toAddress] = 0;
-                        fs.writeFileSync("./bounty.json", JSON.stringify(balance), function(err) {
-                            if(err) {
-                                return console.log(err);
-                            }
-                        });
-                        let txhash = result.txhash;
-                        let trigger = setInterval(() => {
-                            try{
-                                neb.api.getTransactionReceipt({hash: txhash}).then((receipt) => {
-                                    //console.log('Pending transaction ...');
-                                    if (receipt.status != 2) //not in pending
+                    let txhash = result.txhash;
+                    let trigger = setInterval(() => {
+                        try{
+                            neb.api.getTransactionReceipt({hash: txhash}).then((receipt) => {
+                                //console.log('Pending transaction ...');
+                                if (receipt.status != 2) //not in pending
+                                {
+                                    //console.log(JSON.stringify(receipt));
+                                    clearInterval(trigger);
+                                    if (receipt.status == 1) //success
                                     {
-                                        console.log(JSON.stringify(receipt));
-                                        clearInterval(trigger);
-                                        if (receipt.status == 1) //success
-                                        {
-                                            const fs = require('fs');
-                                            var receiptJson = {};
-                                            try {
-                                                receiptJson = require("./receipt.json");
-                                            } catch (err){
-                                                console.log("Has no receipt file.");
-                                            }
-                                            receiptJson[receipt.to] = parseFloat(Unit.fromBasic(receipt.value, 'nas'));
-                                            receiptJson['sent'] += parseFloat(Unit.fromBasic(receipt.value, 'nas'));
-                                            fs.writeFileSync("./receipt.json", JSON.stringify(receiptJson), function(err) {
-                                                if(err) {
-                                                    return console.log(err);
-                                                }
-                                            });
-                                            callback(index + 1);
-                                        } else {
-                                            console.log( fromAddress + " 发送 " + value + " NAS 给 " + toAddress + " 失败");
+                                        const fs = require('fs');
+                                        var receiptJson = {};
+                                        try {
+                                            receiptJson = require("./receipt.json");
+                                        } catch (err){
+                                            console.log("Has no receipt file.");
                                         }
+                                        receiptJson[receipt.to] = parseFloat(Unit.fromBasic(receipt.value, 'nas'));
+                                        receiptJson['sent'] += parseFloat(Unit.fromBasic(receipt.value, 'nas'));
+                                        fs.writeFileSync("./receipt.json", JSON.stringify(receiptJson), function(err) {
+                                            if(err) {
+                                                return console.log(err);
+                                            }
+                                        });
+                                        console.log( fromAddress + " 发送 " + value + " NAS 给 " + toAddress + " 成功");
+                                        callback(index + 1);
+                                    } else {
+                                        console.log( fromAddress + " 发送 " + value + " NAS 给 " + toAddress + " 失败");
                                     }
-                                });
-                            } catch(err){
-                                console.log(err);
-                                clearInterval(trigger);
-                            }
-                        }, 5000);
-                    });
-                } else {
-                    console.log("Escape " + fromAddress + " balance less than " + lowerLimit + " NAS.");
-                }
-            });
-        });
-    } catch (err) {
-        callback(index);
-        console.log( fromAddress + " 发送 " + value + " NAS 给 " + toAddress + " 失败, 尝试重新发送!");
-        //console.log(err.message);
-    }
+                                }
+                            });
+                        } catch(err){
+                            console.log(err);
+                            clearInterval(trigger);
+                            callback(index + 1);
+                        }
+                    }, 5000);
+                });
+
+            } catch (err) {
+                console.log( fromAddress + " 发送 " + value + " NAS 给 " + toAddress + " 失败, 尝试重新发送!");
+                callback(index);
+                //console.log(err.message);
+            }
+        } else {
+            console.log("Escape " + fromAddress + " balance less than " + lowerLimit + " NAS.");
+        }
+    });
+
+
 }
 
 

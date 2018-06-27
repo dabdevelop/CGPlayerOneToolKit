@@ -1,3 +1,6 @@
+#key
+accounts/
+
 # Logs
 logs
 *.log

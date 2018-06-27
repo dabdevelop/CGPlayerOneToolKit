@@ -1,7 +1,5 @@
 "use strict";
 
-var Promise = require("bluebird");
-
 // Step 0: Configure Network and Path
 var Nebulas = require("nebulas"),
     Account = Nebulas.Account,
@@ -16,7 +14,7 @@ var dappAddress = 'n1sr4JA4e9QPB4opLk2Kjmp8NkP6GGoAmnt';
 neb.setRequest(new Nebulas.HttpRequest(rpcURL));
 var path = "./accounts/";
 
-
+var fromAddress;
 
 var playerNum = 0;
 var circulation = 0;
@@ -40,7 +38,7 @@ var confirmBatchTransfer = true;
 
 const fs = require('fs');
 
-var passphrase = "passphrase";
+var passphrase = "password";
 
 // transferRemain();
 transferAll();
@@ -236,12 +234,22 @@ function transferAll(){
     });
 
     var f = function(index){
+        if(index == user.length){ return }
+        while(user[index].value == 0){
+            index ++;
+        }
         if(index < user.length){
             transfer(passphrase, user[index], index, f);
         }
     };
     if(confirmBatchTransfer){
-        transfer(passphrase, user[0], 0, f);
+        var start = 0;
+        while(user[start].value == 0){
+            start ++;
+        }
+        if(start < user.length) {
+            transfer(passphrase, user[start], start, f);
+        }
     }
 }
 
@@ -300,7 +308,7 @@ function transfer(passphrase, user, index, callback){
     try {
         acc = acc.fromKey(key, passphrase, true);
         neb.api.getNebState().then((nebstate) => {
-            let fromAddress = acc.getAddressString();
+            fromAddress = acc.getAddressString();
             neb.api.getAccountState(fromAddress).then((accstate) => {
                 if(Unit.fromBasic(accstate.balance, "nas").toNumber() > 0.1){
                     let _value = Unit.nasToBasic(value);
@@ -376,7 +384,9 @@ function transfer(passphrase, user, index, callback){
             });
         });
     } catch (err) {
-        console.log(err.message);
+        callback(index);
+        console.log( fromAddress + " 发送 " + value + " NAS 给 " + toAddress + " 失败, 尝试重新发送!");
+        //console.log(err.message);
     }
 }
 

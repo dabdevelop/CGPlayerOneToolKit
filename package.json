@@ -1,7 +1,8 @@
 {
   "dependencies": {
     "bluebird": "^3.5.1",
+    "extend": "^3.0.1",
     "fs": "0.0.1-security",
-    "nebulas": "^0.4.8"
+    "nebulas": "^0.5.2"
   }
 }

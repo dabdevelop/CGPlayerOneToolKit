@@ -396,7 +396,7 @@ function transfer(passphrase, user, index, callback){
                             clearInterval(trigger);
                             callback(index + 1);
                         }
-                    }, 5000);
+                    }, 10000);
                 });
 
             } catch (err) {

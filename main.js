@@ -47,11 +47,11 @@ const fs = require('fs');
 var passphrase = "password";
 
 // transferRemain();
-// transferAll();
+ transferAll();
 
 
 
-snapshot();
+//snapshot();
 // calculateBalance();
 
 

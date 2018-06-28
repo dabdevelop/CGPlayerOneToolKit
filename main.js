@@ -336,8 +336,8 @@ function transfer(passphrase, user, index, callback){
                 _value = parseInt(_value);
                 if(nonce < 0){
                     nonce = parseInt(accstate.nonce);
-                    nonce ++;
                 }
+                nonce ++;
                 let _nonce = nonce;
                 //let _nonce = parseInt(accstate.nonce) + 1;
                 let _to = toAddress;

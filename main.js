@@ -331,7 +331,7 @@ function transfer(passphrase, user, index, callback){
     neb.api.getAccountState(fromAddress).then((accstate) => {
         if(Unit.fromBasic(accstate.balance, "nas").toNumber() > 0.1){
             try {
-                console.log(fromAddress + " 准备发送 " + value + " NAS 给 " + toAddress);
+                console.log(fromAddress + " 准备发送 " + value + " NAS 给 " + toAddress + ' (' + sent.length + '/' + total +')');
                 let _value = Unit.nasToBasic(value);
                 _value = parseInt(_value);
                 let _nonce = parseInt(accstate.nonce) + 1;

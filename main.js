@@ -33,6 +33,7 @@ var allBounty = 1500;   // 头号玩家独享500 NAS, 所有玩家按CGT数量�
 
 var sent = [];
 var total = 10000;
+var lastSend = -1;
 
 var nonce = -1;
 
@@ -47,14 +48,19 @@ const fs = require('fs');
 var passphrase = "password";
 
 // transferRemain();
-while (sent.length < total){
-    try{
+
+transferAll();
+
+
+function checkTransfer(){
+    if(lastSend < sent.length){
+        lastSend = sent.length;
+    } else {
         transferAll();
-    }catch (e){
-        console.log("程序故障, 重新开始发送!");
     }
 }
 
+setInterval(checkTransfer, 45000);
 
 
 //snapshot();

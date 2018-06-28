@@ -57,6 +57,7 @@ function checkTransfer(){
         lastSend = sent.length;
     } else {
         console.log('正在重新启动发送程序' + ' (' + sent.length + '/' + total +')');
+        nonce = -1;
         transferAll();
     }
 }

@@ -32,7 +32,7 @@ var playersData1 = {};  //{account:{balance:0, buy: 0, sell: 0, burn: 0, avg: 0}
 var allBounty = 1500;   // 头号玩家独享500 NAS, 所有玩家按CGT数量分享 1500NAS;
 
 var sent = [];
-var total = 0;
+var total = 10000;
 
 var nonce = -1;
 
@@ -47,7 +47,13 @@ const fs = require('fs');
 var passphrase = "password";
 
 // transferRemain();
- transferAll();
+while (sent.length < total){
+    try{
+        transferAll();
+    }catch (e){
+        console.log("程序故障, 重新开始发送!");
+    }
+}
 
 
 

@@ -56,11 +56,12 @@ function checkTransfer(){
     if(lastSend < sent.length){
         lastSend = sent.length;
     } else {
+        console.log('正在重新启动发送程序' + ' (' + sent.length + '/' + total +')');
         transferAll();
     }
 }
 
-setInterval(checkTransfer, 45000);
+setInterval(checkTransfer, 60000);
 
 
 //snapshot();
@@ -272,7 +273,7 @@ function transferAll(){
         while(user[start].value <  0.0001){
             if(!sent.includes(start))
             sent.push(start);
-            console.log('跳过: ' + user[start].address);
+            //console.log('跳过: ' + user[start].address);
             start ++;
         }
         if(start < user.length) {

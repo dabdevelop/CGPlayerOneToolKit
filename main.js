@@ -32,6 +32,7 @@ var playersData1 = {};  //{account:{balance:0, buy: 0, sell: 0, burn: 0, avg: 0}
 var allBounty = 1500;   // 头号玩家独享500 NAS, 所有玩家按CGT数量分享 1500NAS;
 
 var sent = [];
+var total = 0;
 
 var nonce = 0;
 
@@ -231,6 +232,7 @@ function transferAll(){
             user.push({address: key, value: r[key]});
         }
     }
+    total = user.length;
     const fs = require('fs');
     fs.writeFileSync("./user.json", JSON.stringify(user), function(err) {
         if(err) {
@@ -256,6 +258,7 @@ function transferAll(){
     if(confirmBatchTransfer){
         var start = 0;
         while(user[start].value <  0.0001){
+            sent.push(start);
             console.log('跳过: ' + user[start].address);
             start ++;
         }
@@ -350,7 +353,7 @@ function transfer(passphrase, user, index, callback){
                     data: tx.toProtoString()
                 }).then((result) => {
                     //console.log("Transfer " + toAddress + " " + value);
-                    console.log(fromAddress + " 正在发送 " + value + " NAS 给 " + toAddress);
+                    console.log(fromAddress + " 正在发送 " + value + " NAS 给 " + toAddress + ' (' + sent.length + '/' + total +')');
                     const fs = require('fs');
                     var balance = require("./bounty.json");
                     balance[toAddress] = 0;
@@ -384,10 +387,10 @@ function transfer(passphrase, user, index, callback){
                                                 return console.log(err);
                                             }
                                         });
-                                        console.log( fromAddress + " 发送 " + value + " NAS 给 " + toAddress + " 成功");
+                                        console.log( fromAddress + " 发送 " + value + " NAS 给 " + toAddress + " 成功" + ' (' + sent.length + '/' + total +')');
                                         callback(index + 1);
                                     } else {
-                                        console.log( fromAddress + " 发送 " + value + " NAS 给 " + toAddress + " 失败");
+                                        console.log( fromAddress + " 发送 " + value + " NAS 给 " + toAddress + " 失败" + ' (' + sent.length + '/' + total +')');
                                     }
                                 }
                             });

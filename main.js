@@ -34,7 +34,7 @@ var allBounty = 1500;   // 头号玩家独享500 NAS, 所有玩家按CGT数量�
 var sent = [];
 var total = 0;
 
-var nonce = 0;
+var nonce = -1;
 
 
 var lowerLimit = 0;
@@ -334,7 +334,12 @@ function transfer(passphrase, user, index, callback){
                 console.log(fromAddress + " 准备发送 " + value + " NAS 给 " + toAddress + ' (' + sent.length + '/' + total +')');
                 let _value = Unit.nasToBasic(value);
                 _value = parseInt(_value);
-                let _nonce = parseInt(accstate.nonce) + 1;
+                if(nonce < 0){
+                    nonce = parseInt(accstate.nonce);
+                    nonce ++;
+                }
+                let _nonce = nonce;
+                //let _nonce = parseInt(accstate.nonce) + 1;
                 let _to = toAddress;
                 //generate transfer information
                 var Transaction = Nebulas.Transaction;

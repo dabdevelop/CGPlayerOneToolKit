@@ -264,6 +264,7 @@ function transferAll(){
     if(confirmBatchTransfer){
         var start = 0;
         while(user[start].value <  0.0001){
+            if(!sent.includes(start))
             sent.push(start);
             console.log('跳过: ' + user[start].address);
             start ++;

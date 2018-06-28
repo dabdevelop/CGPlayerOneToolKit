@@ -46,11 +46,11 @@ const fs = require('fs');
 var passphrase = "password";
 
 // transferRemain();
-transferAll();
+// transferAll();
 
 
 
-//snapshot();
+snapshot();
 // calculateBalance();
 
 
@@ -256,8 +256,8 @@ function transferAll(){
     if(confirmBatchTransfer){
         var start = 0;
         while(user[start].value <  0.0001){
-            start ++;
             console.log('跳过: ' + user[start].address);
+            start ++;
         }
         if(start < user.length) {
             neb.api.getNebState().then((nebstate) => {

@@ -54,6 +54,7 @@ transferAll();
 
 function checkTransfer(){
     if(lastSend < sent.length){
+        console.log('正在守护发送程序' + ' (' + sent.length + '/' + total +')');
         lastSend = sent.length;
     } else {
         console.log('正在重新启动发送程序' + ' (' + sent.length + '/' + total +')');

@@ -23,6 +23,7 @@ var circulation = 0;
 var buyOrder = [];
 var sellOrder = [];
 var burnOrder = [];
+var splitNum = 250;
 var order = {};
 var players = {};
 var playersId = {};
@@ -41,32 +42,34 @@ var nonce = -1;
 var lowerLimit = 0;
 
 var test = false;
-var confirmBatchTransfer = true;
+var confirmBatchTransfer = false;
 
 const fs = require('fs');
 
 var passphrase = "password";
 
 // transferRemain();
+ // transferDaemon();
 
-transferAll();
+function transferDaemon(){
+	transferAll();
 
+	function checkTransfer(){
+	    if(lastSend < sent.length){
+	        console.log('正在守护发送程序' + ' (' + sent.length + '/' + total +')');
+	        lastSend = sent.length;
+	    } else {
+	        console.log('正在重新启动发送程序' + ' (' + sent.length + '/' + total +')');
+	        nonce = -1;
+	        transferAll();
+	    }
+	}
 
-function checkTransfer(){
-    if(lastSend < sent.length){
-        console.log('正在守护发送程序' + ' (' + sent.length + '/' + total +')');
-        lastSend = sent.length;
-    } else {
-        console.log('正在重新启动发送程序' + ' (' + sent.length + '/' + total +')');
-        nonce = -1;
-        transferAll();
-    }
+	setInterval(checkTransfer, 60000);
 }
 
-setInterval(checkTransfer, 60000);
 
-
-//snapshot();
+snapshot();
 // calculateBalance();
 
 
@@ -207,6 +210,11 @@ function calculateBalance(){
 }
 
 function snapshot(){
+    order = require('./order.json');
+    buyOrder = order.buyOrder;
+    sellOrder = order.sellOrder;
+    burnOrder = order.burnOrder;
+
     getPlayerNum(function(result){
         playerNum = parseInt(result);
         console.log(playerNum);
@@ -255,6 +263,8 @@ function transferAll(){
         }
     });
 
+    console.log('发送进度' + ' (' + sent.length + '/' + total +')');
+
     var f = function(index){
         if(index < user.length){
             try{
@@ -286,47 +296,6 @@ function transferAll(){
         }
     }
 }
-
-function transferRemain(){
-    if(test){
-        neb.setRequest(new Nebulas.HttpRequest("https://testnet.nebulas.io"));
-    }
-    var r = require("./bounty.json");
-
-    var user = []; // [{address: address1, value: value1},{address: address2, value: value2}]
-    for(var key in r) {
-        if(r.hasOwnProperty(key)) {
-            user.push({address: key, value: r[key]});
-        }
-    }
-
-    var f = function(index){
-        if(index == user.length){ return }
-        while(user[index].value == 0){
-            index ++;
-        }
-        var waitInterval;
-        function wait(){
-            clearInterval(waitInterval);
-            transfer(passphrase, user[index], index, f);
-        }
-        if(index < user.length){
-            waitInterval = setInterval(wait, 5000);
-        }
-    };
-
-    if(confirmBatchTransfer){
-        var start = 0;
-        while(user[start].value == 0){
-            start ++;
-        }
-        if(start < user.length) {
-            transfer(passphrase, user[start], start, f);
-        }
-    }
-}
-
-
 
 function transfer(passphrase, user, index, callback){
     if(!sent.includes(index)){
@@ -519,7 +488,7 @@ function getBuyOrderByIndex(index, callback){
             }
             try{
                 result = JSON.parse(result);
-                buyOrder = buyOrder.concat(result);
+                buyOrder = buyOrder.concat(result.slice(buyOrder.length % splitNum, result.length));
                 callback();
             }catch (err){
                 //result is the error message
@@ -543,7 +512,7 @@ function getBuyOrder(callback){
             }
             try{
                 var index = JSON.parse(result);
-                var i = 0;
+                var i = Math.floor(buyOrder.length / splitNum);
                 var f = function(){
                     i ++;
                     if(i <= index){
@@ -578,7 +547,7 @@ function getSellOrderByIndex(index, callback){
             }
             try{
                 result = JSON.parse(result);
-                sellOrder = sellOrder.concat(result);
+                sellOrder = sellOrder.concat(result.slice(sellOrder.length % splitNum, result.length));
                 callback();
             }catch (err){
                 //result is the error message
@@ -602,7 +571,7 @@ function getSellOrder(callback){
             }
             try{
                 var index = JSON.parse(result);
-                var i = 0;
+                var i = Math.floor(sellOrder.length / splitNum);
                 var f = function(){
                     i ++;
                     if(i <= index){
@@ -635,7 +604,7 @@ function getBurnOrderByIndex(index, callback){
             }
             try{
                 result = JSON.parse(result);
-                burnOrder = burnOrder.concat(result);
+                burnOrder = burnOrder.concat(result.slice(burnOrder.length % splitNum, result.length));
                 callback();
             }catch (err){
                 //result is the error message
@@ -660,7 +629,7 @@ function getBurnOrder(callback){
             try{
 
                 var index = JSON.parse(result);
-                var i = 0;
+                var i = Math.floor(burnOrder.length / splitNum);
                 var f = function(){
                     i ++;
                     if(i <= index){

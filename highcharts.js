@@ -6,8 +6,6 @@ var buyOrder = order.buyOrder;
 var sellOrder = order.sellOrder;
 //var buyAndSell = order.buyOrder.concat(order.sellOrder);
 
-var interval = 3600;
-
 var orderBuySell = [];
 
 // 1. 排序
@@ -18,8 +16,8 @@ for(var i in buyOrder){
     orderBuySell.push({time: buyOrder[i].timeSeconds, orderId: buyOrder[i].orderId, type: buyOrder[i].type});
 }
 
-for(var i in sellOrder){
-    orderBuySell.push({time: sellOrder[i].timeSeconds, orderId: sellOrder[i].orderId, type: sellOrder[i].type});
+for(var j in sellOrder){
+    orderBuySell.push({time: sellOrder[j].timeSeconds, orderId: sellOrder[j].orderId, type: sellOrder[j].type});
 }
 
 //console.log(orderBuySell);
@@ -27,14 +25,12 @@ for(var i in sellOrder){
 
 orderBuySell.sort(function(a, b)
 {
-    if(a[0] === b[0])
-    {
-        if(a[2] === b[2]){
-            return a[1] - b[1];
-        }
-        return a[2] - b[2];
+    if(a.timeSeconds == b.timeSeconds){
+        return a.orderId - b.orderId;
+    } else {
+        return a.timeSeconds - b.timeSeconds;
     }
-    return a[0] - b[0];
+
 });
 
 //var result = _(orderBuySell)
@@ -52,23 +48,28 @@ orderBuySell.sort(function(a, b)
 
 //console.log(orderBuySell);
 //
-var groupTime = null;
-var groupCount = 0;
+
+var startTime = new Date(1528416000000);
+var interval = 86400000;
+var groupTime = startTime;
+var groupIndex = 0;
 var groupedData = _.groupBy(orderBuySell, function(d) {
     // no need to do this if eventDateTime is already a Date object
     var time = new Date(d.time * 1000);
 
     // you can remove this condition and initialize groupTime with [0].eventDateTime
-    if (!groupTime) groupTime = new Date(time.getTime() + interval);
     if(time - groupTime <= interval){
-        return groupCount;
+        return groupIndex;
     } else {
-        groupTime = time;
-        groupCount ++;
-        return groupCount;
+        groupTime = new Date(groupTime.getTime() + interval);
+        groupIndex ++;
+        return groupIndex;
     }
     //return time - groupTime <= interval ? groupTime : groupTime = time;
 });
+
+//console.log(groupedData);
+
 
 var data = [];
 
@@ -76,22 +77,22 @@ for (var key in groupedData) {
     data.push(groupedData[key]);
 }
 
-var timeStart = data[0][0] * 1000;
-var timeEnd = new Date().getMilliseconds();
-var num = (timeEnd - timeStart) / interval;
-
+var endTime = new Date();
 var openPrice = 0;
 var highPrice = 0;
 var lowPrice = 0;
 var closePrice = 0;
+var volume = 0;
 
 var dataK = [];
 
-var index = 0;
-for(var i = 0; i < num; i++){
+
+for(var i = 0; i <= groupIndex; i++){
+
     if(i == 0){
-        var oId = data[0][1];
-        var typ = data[0][2];
+
+        var oId = data[i][0].orderId;
+        var typ = data[i][0].type;
         var o;
         if(typ == 0){
             o = buyOrder[oId];
@@ -103,26 +104,58 @@ for(var i = 0; i < num; i++){
         highPrice = openPrice;
         lowPrice = openPrice;
         closePrice = openPrice;
-        for(var j = 1; j < data[0].length; j++){
-            if(highPrice < data[0][j].price){
-                highPrice = data[0][j].price;
-            }
-            if(lowPrice > data[0][j].price){
-                lowPrice = data[0][j].price;
-            }
-            closePrice = data[0][j].price
-        }
+        volume = 0;
 
-        if(i > 0){
-
+        for(var j = 1; j < data[i].length; j++){
+            oId = data[i][j].orderId;
+            typ = data[i][j].type;
+            if(typ == 0){
+                o = buyOrder[oId];
+            } else {
+                o = sellOrder[oId];
+            }
+            if(highPrice < o.price){
+                highPrice = o.price;
+            }
+            if(lowPrice > o.price){
+                lowPrice = o.price;
+            }
+            closePrice = o.price;
+            volume += o.amount;
         }
+        dataK.push([startTime.getTime(), parseFloat(openPrice.toFixed(3)), parseFloat(highPrice.toFixed(3)), parseFloat(lowPrice.toFixed(3)), parseFloat(closePrice.toFixed(3)), parseFloat(volume.toFixed(3))]);
     }
-    //if(data[index][0])
+
+    if(i > 0){
+        openPrice = dataK[i - 1][4];
+        highPrice = dataK[i - 1][4];
+        lowPrice = dataK[i - 1][4];
+        closePrice = dataK[i - 1][4];
+        volume = 0;
+        for(var j = 0; j < data[i].length; j++){
+            oId = data[i][j].orderId;
+            typ = data[i][j].type;
+            if(typ == 0){
+                o = buyOrder[oId];
+            } else {
+                o = sellOrder[oId];
+            }
+            if(highPrice < o.price){
+                highPrice = o.price;
+            }
+            if(lowPrice > o.price){
+                lowPrice = o.price;
+            }
+            closePrice = o.price;
+            volume += o.amount;
+        }
+        dataK.push([startTime.getTime() + interval * i, parseFloat(openPrice.toFixed(3)), parseFloat(highPrice.toFixed(3)), parseFloat(lowPrice.toFixed(3)), parseFloat(closePrice.toFixed(3)), parseFloat(volume.toFixed(1))]);
+    }
 }
 
 
 //
 //
 //
-console.log(data);
+console.log(dataK);
 

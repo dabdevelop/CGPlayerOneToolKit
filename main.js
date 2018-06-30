@@ -69,9 +69,11 @@ function transferDaemon(){
 }
 
 
-snapshot();
+//snapshot();
 // calculateBalance();
 //calculateKL();
+
+setInterval(snapshot, 3000);
 
 function calculateBalance(){
     order = require('./order.json');
@@ -334,7 +336,7 @@ function calculateKL(){
                 closePrice = o.price;
                 volume += o.amount;
             }
-            dataK.push([startTime.getTime(), parseFloat(openPrice.toFixed(3)), parseFloat(highPrice.toFixed(3)), parseFloat(lowPrice.toFixed(3)), parseFloat(closePrice.toFixed(3)), parseFloat(volume.toFixed(3))]);
+            dataK.push([startTime.getTime(), parseFloat(openPrice.toFixed(6)), parseFloat(highPrice.toFixed(6)), parseFloat(lowPrice.toFixed(6)), parseFloat(closePrice.toFixed(6)), parseFloat(volume.toFixed(1))]);
         }
 
         if(i > 0){
@@ -360,7 +362,7 @@ function calculateKL(){
                 closePrice = o.price;
                 volume += o.amount;
             }
-            dataK.push([startTime.getTime() + interval * i, parseFloat(openPrice.toFixed(3)), parseFloat(highPrice.toFixed(3)), parseFloat(lowPrice.toFixed(3)), parseFloat(closePrice.toFixed(3)), parseFloat(volume.toFixed(1))]);
+            dataK.push([startTime.getTime() + interval * i, parseFloat(openPrice.toFixed(6)), parseFloat(highPrice.toFixed(6)), parseFloat(lowPrice.toFixed(6)), parseFloat(closePrice.toFixed(6)), parseFloat(volume.toFixed(1))]);
         }
     }
     fs.writeFileSync("./kl.json", JSON.stringify(dataK), function(err) {

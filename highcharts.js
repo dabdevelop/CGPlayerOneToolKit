@@ -25,12 +25,7 @@ for(var j in sellOrder){
 
 orderBuySell.sort(function(a, b)
 {
-    if(a.timeSeconds == b.timeSeconds){
-        return a.orderId - b.orderId;
-    } else {
-        return a.timeSeconds - b.timeSeconds;
-    }
-
+    return a.time - b.time;
 });
 
 //var result = _(orderBuySell)
@@ -53,6 +48,7 @@ var startTime = new Date(1528416000000);
 var interval = 86400000;
 var groupTime = startTime;
 var groupIndex = 0;
+
 var groupedData = _.groupBy(orderBuySell, function(d) {
     // no need to do this if eventDateTime is already a Date object
     var time = new Date(d.time * 1000);
@@ -68,7 +64,14 @@ var groupedData = _.groupBy(orderBuySell, function(d) {
     //return time - groupTime <= interval ? groupTime : groupTime = time;
 });
 
+const fs = require('fs');
+fs.writeFileSync("./groupedData.json", JSON.stringify(groupedData), function(err) {
+    if(err) {
+        return console.log(err);
+    }
+});
 //console.log(groupedData);
+
 
 
 var data = [];
@@ -123,7 +126,7 @@ for(var i = 0; i <= groupIndex; i++){
             closePrice = o.price;
             volume += o.amount;
         }
-        dataK.push([startTime.getTime(), parseFloat(openPrice.toFixed(3)), parseFloat(highPrice.toFixed(3)), parseFloat(lowPrice.toFixed(3)), parseFloat(closePrice.toFixed(3)), parseFloat(volume.toFixed(3))]);
+        dataK.push([startTime.getTime(), parseFloat(openPrice.toFixed(6)), parseFloat(highPrice.toFixed(6)), parseFloat(lowPrice.toFixed(6)), parseFloat(closePrice.toFixed(6)), parseFloat(volume.toFixed(1))]);
     }
 
     if(i > 0){
@@ -149,7 +152,7 @@ for(var i = 0; i <= groupIndex; i++){
             closePrice = o.price;
             volume += o.amount;
         }
-        dataK.push([startTime.getTime() + interval * i, parseFloat(openPrice.toFixed(3)), parseFloat(highPrice.toFixed(3)), parseFloat(lowPrice.toFixed(3)), parseFloat(closePrice.toFixed(3)), parseFloat(volume.toFixed(1))]);
+        dataK.push([startTime.getTime() + interval * i, parseFloat(openPrice.toFixed(6)), parseFloat(highPrice.toFixed(6)), parseFloat(lowPrice.toFixed(6)), parseFloat(closePrice.toFixed(6)), parseFloat(volume.toFixed(1))]);
     }
 }
 

@@ -251,10 +251,10 @@ function calculateKL(){
 
     orderBuySell.sort(function(a, b)
     {
-        if(a.timeSeconds == b.timeSeconds){
+        if(a.time == b.time){
             return a.orderId - b.orderId;
         } else {
-            return a.timeSeconds - b.timeSeconds;
+            return a.time - b.time;
         }
 
     });

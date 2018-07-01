@@ -68,12 +68,25 @@ function transferDaemon(){
 	setInterval(checkTransfer, 60000);
 }
 
+function snapshotDaemon(){
+    buyOrder = [];
+    sellOrder = [];
+    burnOrder = [];
+    order = {};
+    players = {};
+    playersId = {};
+    bounty = {};
+    playersData = {};  //{account:{balance:0, buy: 0, sell: 0, burn: 0, avg: 0}}
+    playersData1 = {};  //{account:{balance:0, buy: 0, sell: 0, burn: 0, avg: 0}}
+    snapshot();
+}
+
 
 //snapshot();
 // calculateBalance();
 //calculateKL();
 
-setInterval(snapshot, 3000);
+setInterval(snapshotDaemon, 30000);
 
 function calculateBalance(){
     order = require('./order.json');

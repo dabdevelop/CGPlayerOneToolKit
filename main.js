@@ -82,11 +82,11 @@ function snapshotDaemon(){
 }
 
 
-//snapshot();
+snapshot();
 // calculateBalance();
 //calculateKL();
 
-setInterval(snapshotDaemon, 30000);
+// setInterval(snapshotDaemon, 30000);
 
 function calculateBalance(){
     order = require('./order.json');

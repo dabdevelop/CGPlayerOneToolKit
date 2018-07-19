@@ -7,7 +7,7 @@ with open('account.txt', 'r') as file:
 		b[q.strip()] = 0
 
 for q in a:
-	b[q.strip()] = 1.6
+	b[q.strip()] = 4.3
 
 with open('bounty.json', 'w+') as file2:
 	json.dump(b, file2)

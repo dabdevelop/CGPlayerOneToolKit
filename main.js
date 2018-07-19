@@ -546,6 +546,7 @@ function transfer(passphrase, user, index, callback){
                                         try {
                                             receiptJson = require("./receipt.json");
                                         } catch (err){
+                                            receiptJson['sent'] = 0;
                                             console.log("Has no receipt file.");
                                         }
                                         receiptJson[receipt.to] = parseFloat(Unit.fromBasic(receipt.value, 'nas'));

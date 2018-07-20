@@ -30,7 +30,7 @@ var playersId = {};
 var bounty = {};
 var playersData = {};  //{account:{balance:0, buy: 0, sell: 0, burn: 0, avg: 0}}
 var playersData1 = {};  //{account:{balance:0, buy: 0, sell: 0, burn: 0, avg: 0}}
-var allBounty = 1500;   // 头号玩家独享500 NAS, 所有玩家按CGT数量分享 1500NAS;
+var allBounty = 2000;   // 头号玩家独享500 NAS, 所有玩家按CGT数量分享 1500NAS;
 
 var sent = [];
 var total = 10000;
@@ -42,14 +42,14 @@ var nonce = -1;
 var lowerLimit = 0;
 
 var test = false;
-var confirmBatchTransfer = false;
+var confirmBatchTransfer = true;
 
 const fs = require('fs');
 
 var passphrase = "password";
 
 // transferRemain();
- // transferDaemon();
+  transferDaemon();
 
 function transferDaemon(){
 	transferAll();
@@ -82,7 +82,7 @@ function snapshotDaemon(){
 }
 
 
-snapshot();
+//snapshot();
 // calculateBalance();
 //calculateKL();
 
@@ -157,38 +157,52 @@ function calculateBalance(){
 
     items.slice(0, items.length);
 
+    var shares = 0;
+    for(var i in items){
+        if(items[i][1] >= 10000){
+            shares ++;
+        }
+    }
+    shares -= 5;
 
-
-    //for(var i in items){
-    //    if(i == 0){
-    //        bounty[items[i][0]] = items[i][1] / circulation * allBounty + 500;
-    //    } else {
-    //        bounty[items[i][0]] = items[i][1] / circulation * allBounty;
-    //    }
-    //}
-    //
-    //fs.writeFileSync("./bounty.json", JSON.stringify(bounty), function(err) {
-    //    if(err) {
-    //        return console.log(err);
-    //    }
-    //});
-    //
-    //fs.writeFileSync("./bounty.txt", JSON.stringify(bounty), function(err) {
-    //    if(err) {
-    //        return console.log(err);
-    //    }
-    //});
-    //
-    //fs.writeFileSync("./bounty_log.json", JSON.stringify(bounty), function(err) {
-    //    if(err) {
-    //        return console.log(err);
-    //    }
-    //});
+    for(var i in items){
+       if(i == 0){
+           bounty[items[i][0]] = 1000;
+       } else if(i == 1) {
+            bounty[items[i][0]] = 400;
+       } else if(i == 2) {
+            bounty[items[i][0]] = 300;
+       } else if(i == 3) {
+            bounty[items[i][0]] = 200;
+       } else if(i == 4) {
+            bounty[items[i][0]] = 100;
+       } else if(i <= 4 + shares){
+            bounty[items[i][0]] = parseFloat((allBounty / shares).toFixed(2));
+       }
+    }
+    
+    fs.writeFileSync("./bounty.json", JSON.stringify(bounty), function(err) {
+       if(err) {
+           return console.log(err);
+       }
+    });
+    
+    fs.writeFileSync("./bounty.txt", JSON.stringify(bounty), function(err) {
+       if(err) {
+           return console.log(err);
+       }
+    });
+    
+    fs.writeFileSync("./bounty_log.json", JSON.stringify(bounty), function(err) {
+       if(err) {
+           return console.log(err);
+       }
+    });
 
     for(var i in items){
         playersData1[items[i][0]] = playersData[items[i][0]];
         playersData1[items[i][0]].playerId = playersId[items[i][0]];
-        items[i][1] = parseInt(items[i][1]);
+        items[i][1] = parseFloat(items[i][1].toFixed(2));
         items[i][2] = playersId[items[i][0]];
     }
 
@@ -545,6 +559,9 @@ function transfer(passphrase, user, index, callback){
                                         var receiptJson = {};
                                         try {
                                             receiptJson = require("./receipt.json");
+                                            if(typeof receiptJson['sent'] === 'undefined'){
+                                                receiptJson['sent'] = 0;
+                                            }
                                         } catch (err){
                                             receiptJson['sent'] = 0;
                                             console.log("Has no receipt file.");

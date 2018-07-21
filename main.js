@@ -79,7 +79,6 @@ function transferDaemon(){
 }
 
 function snapshotDaemon(){
-    lastSnapshot ++;
     buyOrder = [];
     sellOrder = [];
     burnOrder = [];
@@ -408,6 +407,8 @@ function snapshot(){
     buyOrder = order.buyOrder;
     sellOrder = order.sellOrder;
     burnOrder = order.burnOrder;
+
+    lastSnapshot ++;
 
     getPlayerNum(function(result){
         playerNum = parseInt(result);

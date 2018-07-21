@@ -35,9 +35,8 @@ var allBounty = 2000;   // 头号玩家独享500 NAS, 所有玩家按CGT数量�
 var sent = [];
 var total = 0;
 var lastSend = -1;
-
 var nonce = -1;
-
+var lastSnaptshot = 0;
 
 var lowerLimit = 0;
 
@@ -46,10 +45,12 @@ var confirmBatchTransfer = true;
 
 const fs = require('fs');
 
-var passphrase = "password";
+//  transferDaemon();
+snapshot();
+// calculateBalance();
+//calculateKL();
 
-// transferRemain();
-  transferDaemon();
+// setInterval(snapshotDaemon, 30000);
 
 var transferInterval;
 
@@ -88,13 +89,6 @@ function snapshotDaemon(){
     playersData1 = {};  //{account:{balance:0, buy: 0, sell: 0, burn: 0, avg: 0}}
     snapshot();
 }
-
-
-//snapshot();
-// calculateBalance();
-//calculateKL();
-
-// setInterval(snapshotDaemon, 30000);
 
 function calculateBalance(){
     order = require('./order.json');
@@ -466,12 +460,12 @@ function transferAll(){
     var f = function(index){
         if(index < user.length){
             try{
-                transfer(passphrase, user[index], index, f);
+                transfer(user[index], index, f);
             } catch (e){
                 console.log(e);
                 index ++;
                 if(index < user.length) {
-                    transfer(passphrase, user[index], index, f);
+                    transfer(user[index], index, f);
                 }
             }
         }
@@ -488,13 +482,13 @@ function transferAll(){
         if(start < user.length) {
             neb.api.getNebState().then((nebstate) => {
                 chainId = nebstate.chain_id;
-                transfer(passphrase, user[start], start, f);
+                transfer(user[start], start, f);
             });
         }
     }
 }
 
-function transfer(passphrase, user, index, callback){
+function transfer(user, index, callback){
     if(!sent.includes(index)){
         sent.push(index);
     } else {
@@ -506,9 +500,10 @@ function transfer(passphrase, user, index, callback){
         return callback(index + 1);
     }
     var accounts = require(path + "accounts.json");
+    var passwords = require(path + "passwords.json");
     var key = JSON.stringify(require(path + accounts[0] + ".json"));
     var acc = new Account();
-    acc = acc.fromKey(key, passphrase, true);
+    acc = acc.fromKey(key, passwords[0], true);
     fromAddress = acc.getAddressString();
     neb.api.getAccountState(fromAddress).then((accstate) => {
         if(Unit.fromBasic(accstate.balance, "nas").toNumber() > 0.1){
@@ -610,10 +605,7 @@ function transfer(passphrase, user, index, callback){
 function innerCall(fun, args, value, callback) {
     let params = {};
     var accounts = require(path + "accounts.json");
-    var key = JSON.stringify(require(path + accounts[0] + ".json"));
-    var acc = new Account();
-    acc = acc.fromKey(key, passphrase, true);
-    params.from = acc;
+    params.from = accounts[0];
     params.to = dappAddress;
     params.gasPrice = Utils.toBigNumber(1000000);
     params.gasLimit = Utils.toBigNumber(20000000);
@@ -623,7 +615,7 @@ function innerCall(fun, args, value, callback) {
         "function": fun,
         "args": JSON.stringify(args)
     };
-    console.log(params.from.getAddressString() + ' call ' + params.to + ' @ ' + fun + ": " + JSON.stringify(args) + ' with value: ' + value + ' time: ' + (new Date().toLocaleString()));
+    console.log(params.from + ' call ' + params.to + ' @ ' + fun + ": " + JSON.stringify(args) + ' with value: ' + value + ' time: ' + (new Date().toLocaleString()));
     callback(params);
 }
 
@@ -631,7 +623,7 @@ function getPlayerNum(callback){
     var fun = 'playerNum';
     var args = [];
     innerCall(fun, args, 0, function(params){
-        neb.api.call(params.from.getAddressString(), params.to, params.value, 0, params.gasPrice, params.gasLimit, params.contract).then(function (resp) {
+        neb.api.call(params.from, params.to, params.value, 0, params.gasPrice, params.gasLimit, params.contract).then(function (resp) {
             var result = resp.result;
             if(result === 'null' || result === '""'){
                 return;
@@ -656,7 +648,7 @@ function getCirculation(callback){
     var fun = 'circulation';
     var args = [];
     innerCall(fun, args, 0, function(params){
-        neb.api.call(params.from.getAddressString(), params.to, params.value, 0, params.gasPrice, params.gasLimit, params.contract).then(function (resp) {
+        neb.api.call(params.from, params.to, params.value, 0, params.gasPrice, params.gasLimit, params.contract).then(function (resp) {
             var result = resp.result;
             if(result === 'null' || result === '""'){
                 return;
@@ -681,7 +673,7 @@ function getBuyOrderByIndex(index, callback){
     var args = [];
     args.push(index);
     innerCall(fun, args, 0, function(params){
-        neb.api.call(params.from.getAddressString(), params.to, params.value, 0, params.gasPrice, params.gasLimit, params.contract).then(function (resp) {
+        neb.api.call(params.from, params.to, params.value, 0, params.gasPrice, params.gasLimit, params.contract).then(function (resp) {
             var result = resp.result;
             if(result === 'null' || result === '""'){
                 return;
@@ -705,7 +697,7 @@ function getBuyOrder(callback){
     var fun = 'buyOrderIndex';
     var args = [];
     innerCall(fun, args, 0, function(params){
-        neb.api.call(params.from.getAddressString(), params.to, params.value, 0, params.gasPrice, params.gasLimit, params.contract).then(function (resp) {
+        neb.api.call(params.from, params.to, params.value, 0, params.gasPrice, params.gasLimit, params.contract).then(function (resp) {
             var result = resp.result;
             if(result === 'null' || result === '""'){
                 return;
@@ -740,7 +732,7 @@ function getSellOrderByIndex(index, callback){
     var args = [];
     args.push(index);
     innerCall(fun, args, 0, function(params){
-        neb.api.call(params.from.getAddressString(), params.to, params.value, 0, params.gasPrice, params.gasLimit, params.contract).then(function (resp) {
+        neb.api.call(params.from, params.to, params.value, 0, params.gasPrice, params.gasLimit, params.contract).then(function (resp) {
             var result = resp.result;
             if(result === 'null' || result === '""'){
                 return;
@@ -764,7 +756,7 @@ function getSellOrder(callback){
     var fun = 'sellOrderIndex';
     var args = [];
     innerCall(fun, args, 0, function(params){
-        neb.api.call(params.from.getAddressString(), params.to, params.value, 0, params.gasPrice, params.gasLimit, params.contract).then(function (resp) {
+        neb.api.call(params.from, params.to, params.value, 0, params.gasPrice, params.gasLimit, params.contract).then(function (resp) {
             var result = resp.result;
             if(result === 'null' || result === '""'){
                 return;
@@ -797,7 +789,7 @@ function getBurnOrderByIndex(index, callback){
     var args = [];
     args.push(index);
     innerCall(fun, args, 0, function(params){
-        neb.api.call(params.from.getAddressString(), params.to, params.value, 0, params.gasPrice, params.gasLimit, params.contract).then(function (resp) {
+        neb.api.call(params.from, params.to, params.value, 0, params.gasPrice, params.gasLimit, params.contract).then(function (resp) {
             var result = resp.result;
             if(result === 'null' || result === '""'){
                 return;
@@ -821,7 +813,7 @@ function getBurnOrder(callback){
     var fun = 'burnOrderIndex';
     var args = [];
     innerCall(fun, args, 0, function(params){
-        neb.api.call(params.from.getAddressString(), params.to, params.value, 0, params.gasPrice, params.gasLimit, params.contract).then(function (resp) {
+        neb.api.call(params.from, params.to, params.value, 0, params.gasPrice, params.gasLimit, params.contract).then(function (resp) {
             var result = resp.result;
             if(result === 'null' || result === '""'){
                 return;
@@ -856,7 +848,7 @@ function getTokenBalance(address, callback){
     var args = [];
     args.push(address);
     innerCall(fun, args, 0, function(params){
-        neb.api.call(params.from.getAddressString(), params.to, params.value, 0, params.gasPrice, params.gasLimit, params.contract).then(function (resp) {
+        neb.api.call(params.from, params.to, params.value, 0, params.gasPrice, params.gasLimit, params.contract).then(function (resp) {
             var result = resp.result;
             if(result === 'null' || result === '""'){
                 return;

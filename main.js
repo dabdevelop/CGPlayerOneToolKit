@@ -496,7 +496,7 @@ function transfer(passphrase, user, index, callback){
         return callback(index + 1);
     }
     var toAddress = user.address;
-    var value = parseInt(user.value * 10000) / 10000;
+    var value = user.value;
     if(value < 0.0001){
         return callback(index + 1);
     }
@@ -510,7 +510,6 @@ function transfer(passphrase, user, index, callback){
             try {
                 console.log(fromAddress + " 准备发送 " + value + " NAS 给 " + toAddress + ' (' + sent.length + '/' + total +')');
                 let _value = Unit.nasToBasic(value);
-                _value = parseInt(_value);
                 if(nonce < 0){
                     nonce = parseInt(accstate.nonce);
                 }

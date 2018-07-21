@@ -36,7 +36,8 @@ var sent = [];
 var total = 0;
 var lastSend = -1;
 var nonce = -1;
-var lastSnaptshot = 0;
+var lastSnapshot = 0;
+var lastSnapshotWrite = 0;
 
 var lowerLimit = 0;
 
@@ -78,6 +79,7 @@ function transferDaemon(){
 }
 
 function snapshotDaemon(){
+    lastSnapshot ++;
     buyOrder = [];
     sellOrder = [];
     burnOrder = [];
@@ -428,8 +430,12 @@ function snapshot(){
                         return console.log(err);
                     }
                 });
-
-                calculateBalance();
+                lastSnapshotWrite ++;
+                if(lastSnapshot == lastSnapshotWrite){
+                    calculateBalance();
+                } else {
+                    lastSnapshotWrite = lastSnapshot - 1;
+                }
                 calculateKL();
             });
         });

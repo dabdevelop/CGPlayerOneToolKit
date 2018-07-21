@@ -33,7 +33,7 @@ var playersData1 = {};  //{account:{balance:0, buy: 0, sell: 0, burn: 0, avg: 0}
 var allBounty = 2000;   // 头号玩家独享500 NAS, 所有玩家按CGT数量分享 1500NAS;
 
 var sent = [];
-var total = 10000;
+var total = 0;
 var lastSend = -1;
 
 var nonce = -1;
@@ -51,10 +51,15 @@ var passphrase = "password";
 // transferRemain();
   transferDaemon();
 
+var transferInterval;
+
 function transferDaemon(){
 	transferAll();
-
 	function checkTransfer(){
+        if(sent.length == total){
+            clearInterval(transferInterval);
+            return;
+        }
 	    if(lastSend < sent.length){
 	        console.log('正在守护发送程序' + ' (' + sent.length + '/' + total +')');
 	        lastSend = sent.length;
@@ -65,7 +70,10 @@ function transferDaemon(){
 	    }
 	}
 
-	setInterval(checkTransfer, 60000);
+    transferInterval = setInterval(checkTransfer, 60000);
+    if(sent.length == total){
+        clearInterval(transferInterval);
+    }
 }
 
 function snapshotDaemon(){
@@ -455,8 +463,6 @@ function transferAll(){
         }
     });
 
-    console.log('发送进度' + ' (' + sent.length + '/' + total +')');
-
     var f = function(index){
         if(index < user.length){
             try{
@@ -468,13 +474,12 @@ function transferAll(){
                     transfer(passphrase, user[index], index, f);
                 }
             }
-            //transfer(passphrase, user[index], index, f);
         }
     };
 
     if(confirmBatchTransfer){
         var start = 0;
-        while(user[start].value <  0.0001){
+        while(start < user.length && user[start].value <  0.0001){
             if(!sent.includes(start))
             sent.push(start);
             //console.log('跳过: ' + user[start].address);
@@ -508,6 +513,7 @@ function transfer(passphrase, user, index, callback){
     neb.api.getAccountState(fromAddress).then((accstate) => {
         if(Unit.fromBasic(accstate.balance, "nas").toNumber() > 0.1){
             try {
+                console.log('发送进度' + ' (' + sent.length + '/' + total +')');
                 console.log(fromAddress + " 准备发送 " + value + " NAS 给 " + toAddress + ' (' + sent.length + '/' + total +')');
                 let _value = Unit.nasToBasic(value);
                 if(nonce < 0){
@@ -515,7 +521,6 @@ function transfer(passphrase, user, index, callback){
                 }
                 nonce ++;
                 let _nonce = nonce;
-                //let _nonce = parseInt(accstate.nonce) + 1;
                 let _to = toAddress;
                 //generate transfer information
                 var Transaction = Nebulas.Transaction;
